@@ -5,3 +5,5 @@ metricmind_dbt/dbt_packages/
 __pycache__/
 .env
 .venv/
+frontend/.next/
+frontend/node_modules/
