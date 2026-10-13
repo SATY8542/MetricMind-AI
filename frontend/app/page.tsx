@@ -114,8 +114,8 @@ export default function Home() {
      SEND MESSAGE
   ======================================================= */
 
-  const handleSend = () => {
-    const question = input.trim();
+  const handleSend = (suggestedQuestion?: string) => {
+    const question = (suggestedQuestion ?? input).trim();
 
     if (!question || isLoading) {
       return;
@@ -205,7 +205,7 @@ ORDER BY total_sales DESC;`,
       ]);
 
       setIsLoading(false);
-    }
+    }, 1000);
   };
 
   /* =========================================================
@@ -520,103 +520,51 @@ ORDER BY total_sales DESC;`,
               ================================================= */
 
               <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
-
-                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#192A56]">
-
-                  <Sparkles
-                    size={28}
-                    className="text-[#F7D794]"
-                  />
-
-                </div>
-
-                    <h2 className="text-3xl font-bold tracking-tight text-[#192A56] sm:text-4xl">
-                      Ask your data anything.
-                    </h2>
-
-                    <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-gray-500 sm:text-base">
-                      Ask questions about sales,
-                      revenue, profit, regions,
-                      products, and business
-                      performance using natural
-                      language.
-                    </p>
-
+                <div className="w-full max-w-3xl text-center">
+                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#192A56]">
+                    <Sparkles size={28} className="text-[#F7D794]" />
                   </div>
 
+                  <h2 className="text-3xl font-bold tracking-tight text-[#192A56] sm:text-4xl">
+                    Ask your data anything.
+                  </h2>
+                  <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-gray-500 sm:text-base">
+                    Ask questions about sales, revenue, profit, regions, products, and business
+                    performance using natural language.
+                  </p>
+
                   {/* Suggestions */}
+                  <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                    {suggestions.map((suggestion) => {
+                      const Icon = suggestion.icon;
 
-                  <div className="grid gap-3 sm:grid-cols-3">
-
-                  {suggestions.map((suggestion) => {
-
-                    const Icon = suggestion.icon;
-
-                        return (
-                          <button
-                            key={suggestion.title}
-                            onClick={() =>
-                              handleSuggestionClick(
-                                suggestion.description
-                              )
-                            }
-                            className="
-                              group rounded-2xl
-                              border border-[#192A56]/10
-                              bg-white
-                              p-5
-                              text-left
-                              shadow-sm
-                              transition
-                              hover:-translate-y-0.5
-                              hover:border-[#192A56]/20
-                              hover:shadow-md
-                            "
-                          >
-
-                        <div className="flex items-center justify-between">
-
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7D794]/40">
-
-                            <Icon
-                              size={19}
-                              className="text-[#192A56]"
-                            />
-
-                          </div>
-
-                            <div className="flex items-center justify-between gap-2">
-
-                              <div>
-                                <h3 className="text-sm font-semibold text-[#192A56]">
-                                  {suggestion.title}
-                                </h3>
-
-                                <p className="mt-1 text-xs leading-5 text-gray-500">
-                                  {suggestion.description}
-                                </p>
-                              </div>
-
-                              <ChevronRight
-                                size={16}
-                                className="shrink-0 text-gray-300 transition group-hover:translate-x-0.5 group-hover:text-[#192A56]"
-                              />
-
+                      return (
+                        <button
+                          key={suggestion.title}
+                          onClick={() => handleSuggestionClick(suggestion.description)}
+                          className="group rounded-2xl border border-[#192A56]/10 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#192A56]/20 hover:shadow-md"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F7D794]/40">
+                              <Icon size={19} className="text-[#192A56]" />
                             </div>
-
-                          </button>
-                        );
-                      }
-                    )}
-
+                            <div className="flex items-center justify-between gap-2">
+                              <div>
+                                <h3 className="text-sm font-semibold text-[#192A56]">{suggestion.title}</h3>
+                                <p className="mt-1 text-xs leading-5 text-gray-500">{suggestion.description}</p>
+                              </div>
+                              <ChevronRight size={16} className="shrink-0 text-gray-300 transition group-hover:translate-x-0.5 group-hover:text-[#192A56]" />
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
 
                   <p className="mt-8 text-center text-[10px] text-gray-400 sm:text-xs">
                     Powered by MetricMind Semantic BI Engine
                   </p>
-
                 </div>
-
               </div>
 
             ) : (
@@ -631,276 +579,62 @@ ORDER BY total_sales DESC;`,
 
                   <div className="space-y-6">
 
-                    {messages.map(
-                      (message) => (
+                    {messages.map((message) => (
+                      <div key={message.id} className={`flex gap-3 sm:gap-4 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                        {message.role === "assistant" && (
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#192A56]">
+                            <Bot size={18} className="text-[#F7D794]" />
+                          </div>
+                        )}
 
-                        <div
-                          key={message.id}
-                          className={`flex gap-3 sm:gap-4 ${
-                            message.role ===
-                            "user"
-                              ? "justify-end"
-                              : "justify-start"
-                          }`}
-                        >
-
-                          {/* Assistant Icon */}
-
-                      {item.role === "assistant" && (
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#192A56]">
-
-                          <Bot
-                            size={18}
-                            className="text-[#F7D794]"
-                          />
-
-                        </div>
-                      )}
-
-                          {/* Message Content */}
-
-                          <div
-                            className={`min-w-0 ${
-                              message.role ===
-                              "user"
-                                ? "max-w-[85%] sm:max-w-[75%]"
-                                : "w-full max-w-[90%] sm:max-w-[85%]"
-                            }`}
-                          >
-
-                        {/* NAME */}
-
-                        <div
-                          className={`
-                            mb-1
-                            text-xs
-                            font-semibold
-                            opacity-60
-                            ${
-                              item.role === "user"
-                                ? "text-right"
-                                : "text-left"
-                            }
-                          `}
-                        >
-
-                          {item.role === "user"
-                            ? "You"
-                            : "MetricMind"}
-
-                        </div>
-
-                        {/* MESSAGE */}
-
-                        <div
-                          className={`
-                            rounded-2xl
-                            px-4 py-3
-                            text-sm
-                            leading-6
-                            ${
-                              item.role === "user"
-                                ? "rounded-br-md bg-[#192A56] text-white"
-                                : "rounded-bl-md border border-[#192A56]/10 bg-white text-gray-700 shadow-sm"
-                            }
-                          `}
-                        >
-
-                          <p>
-                            {item.content}
-                          </p>
-
-                        </div>
-
-                        {/* =================================================
-                            ASSISTANT RESULT
-                        ================================================= */}
-
-                        {item.role === "assistant" &&
-                          item.chart && (
-                            <div className="mt-5">
-
-                              {/* ================================
-                                  DYNAMIC CHART
-                              ================================= */}
-
-                              <DynamicChart
-                                type={
-                                  item.chart.type
-                                }
-                                title={
-                                  item.chart.title
-                                }
-                                subtitle={
-                                  item.chart.subtitle
-                                }
-                                data={
-                                  item.chart.data
-                                }
-                              />
-
-                              {/* ================================
-                                  ACTION BUTTONS
-                              ================================= */}
-
-                            {message.role ===
-                              "assistant" && (
-                              <div className="mt-3 flex flex-wrap gap-2">
-
-                                {/* View API */}
-
-                                <button
-                                  onClick={() =>
-                                    setShowApiCall(
-                                      showApiCall ===
-                                        item.id
-                                        ? null
-                                        : item.id
-                                    )
-                                  }
-                                  className="
-                                    rounded-lg
-                                    border
-                                    border-[#192A56]/15
-                                    bg-white
-                                    px-3 py-2
-                                    text-xs
-                                    font-medium
-                                    text-[#192A56]
-                                    transition
-                                    hover:border-[#192A56]/30
-                                    hover:bg-[#192A56]/5
-                                  "
-                                >
-
-                                  {showApiCall ===
-                                  item.id
-                                    ? "Hide API Call"
-                                    : "View API Call"}
-
-                                </button>
-
-                                {/* View SQL */}
-
-                                <button
-                                  onClick={() =>
-                                    setShowSql(
-                                      showSql ===
-                                        item.id
-                                        ? null
-                                        : item.id
-                                    )
-                                  }
-                                  className="
-                                    rounded-lg
-                                    border
-                                    border-[#192A56]/15
-                                    bg-white
-                                    px-3 py-2
-                                    text-xs
-                                    font-medium
-                                    text-[#192A56]
-                                    transition
-                                    hover:border-[#192A56]/30
-                                    hover:bg-[#192A56]/5
-                                  "
-                                >
-
-                                  {showSql === item.id
-                                    ? "Hide SQL"
-                                    : "View SQL"}
-
-                                </button>
-
-                              </div>
-                            )}
-
-                              {/* ================================
-                                  API PANEL
-                              ================================= */}
-
-                              {showApiCall ===
-                                item.id &&
-                                item.api && (
-                                  <div className="mt-3 rounded-xl border border-[#192A56]/10 bg-[#192A56] p-4">
-
-                                  <div className="mb-3 flex items-center justify-between">
-
-                                    <h4 className="text-xs font-semibold text-[#F7D794]">
-                                      API CALL
-                                    </h4>
-
-                                      <span className="rounded-md bg-white/10 px-2 py-1 text-[10px] text-white/60">
-                                        {
-                                          item.api
-                                            .method
-                                        }
-                                      </span>
-
-                                  </div>
-
-                                    <p className="mb-3 text-xs text-white/60">
-                                      {
-                                        item.api
-                                          .endpoint
-                                      }
-                                    </p>
-
-                                    <pre className="overflow-x-auto whitespace-pre-wrap text-xs leading-5 text-white/80">
-{JSON.stringify(
-  item.api.request,
-  null,
-  2
-)}
-                                    </pre>
-
-                                </div>
-                              )}
-
-                              {/* ================================
-                                  SQL PANEL
-                              ================================= */}
-
-                              {showSql ===
-                                item.id &&
-                                item.sql && (
-                                  <div className="mt-3 rounded-xl border border-[#192A56]/10 bg-[#192A56] p-4">
-
-                                  <h4 className="mb-3 text-xs font-semibold text-[#F7D794]">
-                                    SQL QUERY
-                                  </h4>
-
-                                    </div>
-
-                                    <pre className="overflow-x-auto whitespace-pre-wrap text-xs leading-5 text-white/80">
-                                      {
-                                        item.sql
-                                      }
-                                    </pre>
-
-                                </div>
-                              )}
-
+                        <div className={`min-w-0 ${message.role === "user" ? "max-w-[85%] sm:max-w-[75%]" : "w-full max-w-[90%] sm:max-w-[85%]"}`}>
+                          <div className={`mb-1 text-xs font-semibold opacity-60 ${message.role === "user" ? "text-right" : "text-left"}`}>
+                            {message.role === "user" ? "You" : "MetricMind"}
+                          </div>
+                          <div className={`rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-md bg-[#192A56] text-white" : "rounded-bl-md border border-[#192A56]/10 bg-white text-gray-700 shadow-sm"}`}>
+                            <p>{message.content}</p>
                           </div>
 
-                          {/* User Icon */}
+                          {message.role === "assistant" && message.chart && (
+                            <div className="mt-5">
+                              <DynamicChart type={message.chart.type} title={message.chart.title} subtitle={message.chart.subtitle} data={message.chart.data} />
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <button onClick={() => setShowApiCall(showApiCall === message.id ? null : message.id)} className="rounded-lg border border-[#192A56]/15 bg-white px-3 py-2 text-xs font-medium text-[#192A56] transition hover:border-[#192A56]/30 hover:bg-[#192A56]/5">
+                                  {showApiCall === message.id ? "Hide API Call" : "View API Call"}
+                                </button>
+                                <button onClick={() => setShowSql(showSql === message.id ? null : message.id)} className="rounded-lg border border-[#192A56]/15 bg-white px-3 py-2 text-xs font-medium text-[#192A56] transition hover:border-[#192A56]/30 hover:bg-[#192A56]/5">
+                                  {showSql === message.id ? "Hide SQL" : "View SQL"}
+                                </button>
+                              </div>
 
-                      {/* USER ICON */}
+                              {showApiCall === message.id && message.api && (
+                                <div className="mt-3 rounded-xl border border-[#192A56]/10 bg-[#192A56] p-4">
+                                  <div className="mb-3 flex items-center justify-between">
+                                    <h4 className="text-xs font-semibold text-[#F7D794]">API CALL</h4>
+                                    <span className="rounded-md bg-white/10 px-2 py-1 text-[10px] text-white/60">{message.api.method}</span>
+                                  </div>
+                                  <p className="mb-3 text-xs text-white/60">{message.api.endpoint}</p>
+                                  <pre className="overflow-x-auto whitespace-pre-wrap text-xs leading-5 text-white/80">{JSON.stringify(message.api.request, null, 2)}</pre>
+                                </div>
+                              )}
 
-                      {item.role === "user" && (
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EDA6A3]">
-
-                          <User
-                            size={18}
-                            className="text-[#192A56]"
-                          />
-
+                              {showSql === message.id && message.sql && (
+                                <div className="mt-3 rounded-xl border border-[#192A56]/10 bg-[#192A56] p-4">
+                                  <h4 className="mb-3 text-xs font-semibold text-[#F7D794]">SQL QUERY</h4>
+                                  <pre className="overflow-x-auto whitespace-pre-wrap text-xs leading-5 text-white/80">{message.sql}</pre>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      )}
 
-                    </div>
-
-                  ))}
+                        {message.role === "user" && (
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EDA6A3]">
+                            <User size={18} className="text-[#192A56]" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
 
                   {/* =================================================
                       LOADING
