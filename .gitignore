@@ -4,7 +4,14 @@ metricmind_dbt/dbt_packages/
 *.pyc
 __pycache__/
 .env
+.env.*
+!.env.example
 .venv/
+aasavari-fastapi
 # Frontend generated files
 frontend/.next/
 frontend/node_modules/
+=======
+node_modules/
+.cubestore/
+main
