@@ -1,13 +1,29 @@
-logs/
-metricmind_dbt/target/
-metricmind_dbt/dbt_packages/
-*.pyc
-__pycache__/
+﻿# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
 .env
 .env.*
 !.env.example
-.venv/
+
+# Node
 node_modules/
+<<<<<<< HEAD
 .cubestore/
 
 .next/
+=======
+.next/
+out/
+dist/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Logs
+*.log
+>>>>>>> group/main
