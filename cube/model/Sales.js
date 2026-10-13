@@ -27,11 +27,13 @@ cube(`Sales`, {
       sql: `${CUBE}.total_units_sold`
     },
 
-    averageMargin: {
-      type: `number`,
-      sql: `${totalProfit} / NULLIF(${totalRevenue}, 0)`,
-      format: `percent`
-    }
+   
+  averageMargin: {
+  type: `number`,
+  sql: `1.0 * SUM(${CUBE}.total_profit) / NULLIF(SUM(${CUBE}.total_revenue), 0)`,
+  format: `percent`
+}
+
   },
 
   dimensions: {

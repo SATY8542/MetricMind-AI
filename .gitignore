@@ -1,17 +1,23 @@
-logs/
-metricmind_dbt/target/
-metricmind_dbt/dbt_packages/
-*.pyc
-__pycache__/
+﻿# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
 .env
 .env.*
 !.env.example
-.venv/
-aasavari-fastapi
-# Frontend generated files
-frontend/.next/
-frontend/node_modules/
-=======
+
+# Node
 node_modules/
-.cubestore/
-main
+.next/
+out/
+dist/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Logs
+*.log
