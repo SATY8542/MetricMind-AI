@@ -29,7 +29,7 @@ cube(`Sales`, {
 
     averageMargin: {
       type: `number`,
-      sql: `{totalProfit} / NULLIF({totalRevenue}, 0)`,
+      sql: `${totalProfit} / NULLIF(${totalRevenue}, 0)`,
       format: `percent`
     }
   },
