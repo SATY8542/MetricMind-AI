@@ -1,0 +1,57 @@
+erDiagram
+    RAW_SALES {
+        varchar order_id PK "Unique order identifier"
+        date order_date "Transaction date"
+        int year "Calendar year"
+        varchar quarter "Fiscal quarter (Q1-Q4)"
+        int month "Month index (1-12)"
+        varchar region "Geographical region"
+        varchar country "Country of sale"
+        varchar product "Product category"
+        varchar channel "Sales channel"
+        int units_sold "Units sold"
+        numeric unit_price "Selling price per unit"
+        numeric revenue "Total revenue"
+        numeric material_cost "Direct material cost"
+        numeric shipping_cost "Logistics cost"
+        numeric labor_cost "Labor cost"
+        numeric marketing_cost "Marketing cost"
+        numeric total_cost "Sum of all costs"
+        numeric profit "Net gross profit"
+        numeric margin_percent "Margin percentage"
+    }
+
+    STG_RAW_SALES {
+        varchar order_id "Validated clean order_id"
+        date order_date "Cleaned transaction date"
+        int year "Cleaned year"
+        varchar quarter "Cleaned quarter"
+        int month "Cleaned month"
+        varchar region "Geographical region"
+        varchar country "Country of sale"
+        varchar product "Product category"
+        varchar channel "Sales channel"
+        int units_sold "Units sold"
+        numeric unit_price "Unit price"
+        numeric revenue "Revenue"
+        numeric total_cost "Total cost"
+        numeric profit "Profit"
+        numeric margin_percent "Margin %"
+    }
+
+    SALES_SUMMARY {
+        int year PK,FK "Dimension: Year"
+        varchar quarter PK,FK "Dimension: Quarter"
+        varchar region PK,FK "Dimension: Region"
+        varchar country PK,FK "Dimension: Country"
+        varchar product PK,FK "Dimension: Product"
+        varchar channel PK,FK "Dimension: Channel"
+        bigint total_orders "Measure: COUNT(*)"
+        bigint total_units_sold "Measure: SUM(units_sold)"
+        numeric total_revenue "Measure: SUM(revenue)"
+        numeric total_cost "Measure: SUM(total_cost)"
+        numeric total_profit "Measure: SUM(profit)"
+    }
+
+    RAW_SALES ||--|| STG_RAW_SALES : "dbt cleanses & casts"
+    STG_RAW_SALES ||--o{ SALES_SUMMARY : "dbt aggregates by 6 dimensions"

@@ -9,7 +9,7 @@ cube(`Sales`, {
 
     totalRevenue: {
       type: `sum`,
-      sql: `total_revenue`
+      sql: `${CUBE}.total_revenue`
     },
 
     totalProfit: {

@@ -1,0 +1,31 @@
+flowchart LR
+    subgraph Raw_Layer ["1. Raw Ingestion"]
+        CSV["MetricMind_Corporate_Sales_Dataset.csv<br/>(5,001 Records, 19 Columns)"]
+        RawDB[("public.raw_sales<br/>(PostgreSQL Table)")]
+        CSV -->|"Bulk Copy / Insert"| RawDB
+    end
+
+    subgraph dbt_Transformations ["2. dbt Relational Transformation Pipeline"]
+        Stg["stg_raw_sales.sql<br/>(Staging View)<br/>- Cleans & casts types<br/>- Preserves 19 attributes"]
+        Tests{"Schema Tests<br/>- order_id: unique<br/>- order_id: not_null"}
+        Mart["sales_summary.sql<br/>(Marts View)<br/>- GROUP BY 6 Dimensions<br/>- Aggregates 5 Measures"]
+        
+        RawDB -->|"source('raw', 'raw_sales')"| Stg
+        Stg --> Tests
+        Stg -->|"ref('stg_raw_sales')"| Mart
+    end
+
+    subgraph Semantic_Governance ["3. Cube.js Semantic Governance"]
+        Cube["Cube.js Model (Sales.js)<br/>Measures:<br/>- totalOrders (SUM)<br/>- totalRevenue (SUM)<br/>- totalCost (SUM)<br/>- totalProfit (SUM)<br/>- totalUnitsSold (SUM)<br/>- averageMargin (Calculated %)<br/>Dimensions:<br/>- year, quarter, region, country, product, channel"]
+        Mart -->|"sql_table: public.sales_summary"| Cube
+    end
+
+    subgraph Consumption_Layer ["4. Dual Consumption Modes"]
+        CubeAPI["Headless REST API<br/>(:4000/cubejs-api/v1/load)<br/>Consumed by AI Agent Tools"]
+        FastAPIEndpoint["FastAPI /dbt/sales-summary<br/>(:8000)<br/>Direct SQL Query via psycopg2"]
+        InMemSlicing["FastAPI Summary Slicing<br/>(:8000/summary/*)<br/>Vectorized pandas operations"]
+
+        Cube --> CubeAPI
+        Mart --> FastAPIEndpoint
+        CSV --> InMemSlicing
+    end

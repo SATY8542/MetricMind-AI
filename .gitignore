@@ -1,4 +1,4 @@
-﻿# OS files
+# OS files
 .DS_Store
 Thumbs.db
 
@@ -24,3 +24,4 @@ venv/
 
 # Logs
 *.log
+*.tsbuildinfo

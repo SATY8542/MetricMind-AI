@@ -1,0 +1,62 @@
+graph TB
+    subgraph Presentation_Tier ["1. Presentation Tier (Next.js Dashboard)"]
+        UI["Conversational Interface (page.tsx)<br/>- React 19 / TypeScript / Tailwind CSS<br/>- Chat Bubbles & Quick Suggestions"]
+        ECharts["Apache ECharts Visualizer<br/>(DynamicChart.tsx)<br/>- Dynamic Bar & Line Charts"]
+        Inspector["Query Transparency Drawers<br/>- View API Call (JSON)<br/>- View SQL Query"]
+        UI --> ECharts
+        UI --> Inspector
+    end
+
+    subgraph Gateway_Tier ["2. Analytics Gateway (FastAPI Service :8000)"]
+        CORS["CORS Middleware<br/>Allowed: localhost:3000"]
+        API["FastAPI Routing Engine (main.py)"]
+        PandasEngine["In-Memory Pandas Engine<br/>- 5,001 Records Tabular Dataset<br/>- 11 Slicing & Summary Endpoints"]
+        DBConnector["Relational Connector<br/>(psycopg2 Driver)<br/>- /dbt/sales-summary"]
+        CORS --> API
+        API --> PandasEngine
+        API --> DBConnector
+    end
+
+    subgraph Storage_Tier ["3. Persistence & Dataset Storage"]
+        CSV["MetricMind_Corporate_Sales_Dataset.csv<br/>(5,001 Transaction Rows)"]
+        PostgresDB[("PostgreSQL Database :5432<br/>Database: metricmind<br/>Schema: public")]
+        RawTable["public.raw_sales<br/>(19 Transactional Columns)"]
+        MartTable["public.sales_summary<br/>(Aggregated Mart View)"]
+        PostgresDB --> RawTable
+        PostgresDB --> MartTable
+    end
+
+    subgraph Transformation_Tier ["4. Transformation Engine (metricmind_dbt)"]
+        dbtCore["dbt-core 1.10 & dbt-postgres 1.9"]
+        StgModel["stg_raw_sales.sql<br/>(View Materialization)"]
+        MartModel["sales_summary.sql<br/>(Grouped by 6 Dimensions)"]
+        Tests["Schema Integrity Tests<br/>(unique, not_null on order_id)"]
+        dbtCore --> StgModel
+        StgModel --> MartModel
+        dbtCore --> Tests
+    end
+
+    subgraph Semantic_Tier ["5. Semantic Governance Layer (Cube.js :4000)"]
+        CubeServer["@cubejs-backend/server"]
+        CubeModel["Sales.js Semantic Model<br/>- 6 Measures: orders, units, revenue, cost, profit, margin<br/>- 6 Dimensions: year, quarter, region, country, product, channel"]
+        CubeServer --> CubeModel
+    end
+
+    subgraph AI_Agent_Tier ["6. AI Agent Analytics Layer (ai_agentllm)"]
+        Parser["Natural Language Parser (parser.py)<br/>- Question -> SemanticQuery<br/>- State Filter Rejection Guardrail"]
+        DateTool["Calendar Resolver (tools.py)<br/>- ISO-8601 Date Ranges"]
+        CubeTool["Cube REST Dispatcher (tools.py)<br/>- POST /cubejs-api/v1/load"]
+        Reasoner["Analytical Reasoner (reasoning.py)<br/>- Absolute & % Variance<br/>- Trend Direction (increased/decreased)"]
+        Parser --> DateTool
+        DateTool --> CubeTool
+        CubeTool --> Reasoner
+    end
+
+    %% Cross-Tier Connections
+    UI -.->|"Interactive Demo Flow (Target: Direct REST)"| API
+    PandasEngine -->|"Loads on Startup"| CSV
+    DBConnector -->|"Direct Query"| MartTable
+    RawTable -->|"dbt Source Ref"| StgModel
+    MartModel -->|"Materializes as View"| MartTable
+    CubeModel -->|"Translates Semantic SQL"| MartTable
+    CubeTool -->|"POST /cubejs-api/v1/load"| CubeServer
