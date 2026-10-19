@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    actor User as Business User
+    participant Frontend as Next.js Dashboard
+    participant Parser as NL Parser (parser.py)
+    participant Tools as Tool Integrator (tools.py)
+    participant Cube as Cube.js Server (:4000)
+    participant Postgres as PostgreSQL (sales_summary)
+    participant Reasoner as Reasoner Engine (reasoning.py)
+
+    User->>Frontend: Enter question: "Show revenue for India last month"
+    Note over Frontend,Parser: Input validated (non-empty)
+    Frontend->>Parser: parse_question(question)
+    
+    alt Missing Measure (no 'revenue')
+        Parser-->>Frontend: Error: ValueError("Missing or unsupported measure: revenue.")
+    else Unsupported State Filter (e.g. "in Maharashtra")
+        Parser-->>Frontend: Error: ValueError("State-level filtering is not supported.")
+    else Supported Country & Temporal Intent
+        Parser-->>Tools: SemanticQuery(measures=["Sales.revenue"], filters={"Sales.country": "India"}, time_range="last month")
+    end
+
+    Tools->>Tools: get_date_range("last month") -> ["YYYY-MM-01", "YYYY-MM-End"]
+    Tools->>Tools: Build Cube JSON Query Payload
+    Tools->>Cube: HTTP POST /cubejs-api/v1/load
+    Cube->>Postgres: Compile & Execute SQL against public.sales_summary
+    Postgres-->>Cube: Aggregated Data Rows
+    Cube-->>Tools: JSON Data Payload
+
+    Tools->>Reasoner: Pass metrics for variance calculation
+    Reasoner->>Reasoner: calculate_change(prev, curr, metric) -> {delta, % change, trend}
+    Reasoner-->>Frontend: Structured analytical result + chart config
+
+    Frontend->>Frontend: Render DynamicChart (ECharts) & populate "View API" & "View SQL"
+    Frontend-->>User: Visual Chart + Natural-Language Summary + Transparent Traces

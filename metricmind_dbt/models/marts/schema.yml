@@ -40,5 +40,5 @@ models:
       - name: total_profit
         description: "Total profit generated from sales."
 
-      - name: margin_percent
-        description: "Profit margin calculated as total profit divided by total revenue, multiplied by 100."
+      - name: avg_margin_percent
+        description: "Weighted average profit margin percentage (total_profit / total_revenue * 100)."

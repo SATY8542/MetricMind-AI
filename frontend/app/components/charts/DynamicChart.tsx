@@ -1,304 +1,226 @@
 "use client";
 
-import { useMemo, useRef, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 
-export type SeriesItem = {
+export type ChartSeries = {
   name: string;
-  values: number[];
+  type?: "bar" | "line" | "pie";
+  data: number[];
   color?: string;
+  smooth?: boolean;
+  areaStyle?: any;
+  lineStyle?: any;
 };
 
 export type ChartData = {
   labels: string[];
   values?: number[];
-  series?: SeriesItem[];
+  series?: ChartSeries[];
 };
 
 export type DynamicChartProps = {
-  type: "bar" | "line";
+  type?: "bar" | "line" | "pie" | "area";
   title: string;
   subtitle?: string;
   data: ChartData;
+  height?: number;
+  formatAsCurrency?: boolean;
+  formatAsPercent?: boolean;
 };
 
-const PALETTE = ["#192A56", "#F7D794", "#4A69BD", "#10AC84", "#EDA6A3", "#7D5FFF"];
-
-/**
- * Metric-aware value formatter that distinguishes currency from counts and percentages
- */
-export function formatMetricValue(val: number, metricName?: string): string {
-  if (isNaN(val) || val === null || val === undefined) return String(val);
-
-  const lower = (metricName || "").toLowerCase();
-
-  // Percentage / Margin
-  if (lower.includes("margin") || lower.includes("percent") || lower.includes("pct")) {
-    const pct = Math.abs(val) <= 1 && val !== 0 ? val * 100 : val;
-    return pct.toFixed(2) + "%";
-  }
-
-  // Count metrics: Orders, Units Sold, Quantities
-  const isCount =
-    lower.includes("order") ||
-    lower.includes("unit") ||
-    lower.includes("count") ||
-    lower.includes("volume") ||
-    lower.includes("quantity");
-
-  if (isCount) {
-    if (Math.abs(val) >= 1_000_000) {
-      return (val / 1_000_000).toFixed(2) + "M units";
-    }
-    if (Math.abs(val) >= 1_000) {
-      return (val / 1_000).toFixed(1) + "K";
-    }
-    return Math.round(val).toLocaleString("en-US");
-  }
-
-  // Financial / Monetary metrics: Revenue, Profit, Cost (default for BI)
-  if (Math.abs(val) >= 1_000_000_000) {
-    return "$" + (val / 1_000_000_000).toFixed(2) + "B";
-  }
-  if (Math.abs(val) >= 1_000_000) {
-    return "$" + (val / 1_000_000).toFixed(2) + "M";
-  }
-  if (Math.abs(val) >= 1_000) {
-    return "$" + (val / 1_000).toFixed(1) + "K";
-  }
-  return "$" + val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 export default function DynamicChart({
-  type,
+  type = "bar",
   title,
   subtitle,
   data,
+  height = 320,
+  formatAsCurrency = false,
+  formatAsPercent = false,
 }: DynamicChartProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const echartsRef = useRef<any>(null);
-
-  // Resize listener for responsive behavior
-  useEffect(() => {
-    const handleResize = () => {
-      if (echartsRef.current) {
-        const instance = echartsRef.current.getEchartsInstance?.();
-        instance?.resize();
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const hasSeries = Array.isArray(data?.series) && data.series.length > 0;
-  const hasValues = Array.isArray(data?.values) && data.values.length > 0;
-
-  // Determine if this chart is monetary or counts
-  const isCountChart = useMemo(() => {
-    const t = (title || "").toLowerCase();
-    if (t.includes("order") || t.includes("unit")) return true;
-    if (hasSeries) {
-      const allCounts = data.series!.every((s) => {
-        const n = s.name.toLowerCase();
-        return n.includes("order") || n.includes("unit");
-      });
-      return allCounts;
-    }
-    return false;
-  }, [title, hasSeries, data?.series]);
-
-  const option = useMemo(() => {
-    if (!data || !data.labels || data.labels.length === 0 || (!hasSeries && !hasValues)) {
-      return null;
-    }
-
-    const seriesList = hasSeries
-      ? data.series!.map((s, index) => {
-          const color = s.color || PALETTE[index % PALETTE.length];
-          return {
-            name: s.name,
-            type: type,
-            data: s.values,
-            smooth: type === "line",
-            barMaxWidth: 44,
-            barGap: "20%",
-            itemStyle: {
-              color: color,
-              borderRadius: type === "bar" ? [6, 6, 0, 0] : 0,
-            },
-            lineStyle: {
-              color: color,
-              width: 3,
-            },
-            symbol: "circle",
-            symbolSize: 7,
-          };
-        })
-      : [
-          {
-            name: title,
-            type: type,
-            data: data.values!,
-            smooth: type === "line",
-            barMaxWidth: 52,
-            itemStyle: {
-              color: "#192A56",
-              borderRadius: type === "bar" ? [6, 6, 0, 0] : 0,
-            },
-            lineStyle: {
-              color: "#192A56",
-              width: 3,
-            },
-            symbol: "circle",
-            symbolSize: 8,
-          },
-        ];
-
-    const needsRotation = data.labels.length > 4;
-
-    return {
-      tooltip: {
-        trigger: "axis",
-        confine: true, // Prevents tooltip clipping and overlapping outside chart boundaries
-        backgroundColor: "rgba(25, 42, 86, 0.95)",
-        borderColor: "rgba(247, 215, 148, 0.4)",
-        borderWidth: 1,
-        padding: [10, 14],
-        textStyle: {
-          color: "#ffffff",
-          fontSize: 12,
-        },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        formatter: function (params: any) {
-          if (!Array.isArray(params)) return "";
-          let content = `<div style="font-weight: 700; margin-bottom: 6px; color: #F7D794; font-size: 13px;">${params[0]?.axisValueLabel ?? ""}</div>`;
-          for (const item of params) {
-            const num = typeof item.value === "number" ? item.value : Number(item.value);
-            const formatted = isNaN(num) ? item.value : formatMetricValue(num, item.seriesName);
-            content += `<div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; margin-top: 4px;">
-              <span style="display: flex; align-items: center; gap: 6px;">
-                ${item.marker} <span style="color: #E0E2E7;">${item.seriesName}:</span>
-              </span>
-              <span style="font-weight: 600; color: #FFFFFF; font-variant-numeric: tabular-nums;">${formatted}</span>
-            </div>`;
-          }
-          return content;
-        },
-      },
-
-      legend: hasSeries
-        ? {
-            top: 6,
-            right: "3%",
-            icon: "roundRect",
-            itemWidth: 13,
-            itemHeight: 9,
-            itemGap: 16,
-            textStyle: {
-              color: "#475467",
-              fontSize: 12,
-              fontWeight: 500,
-            },
-          }
-        : undefined,
-
-      grid: {
-        left: "3%",
-        right: "4%",
-        bottom: needsRotation ? 55 : 35,
-        top: hasSeries ? 55 : 30,
-        containLabel: true,
-      },
-
-      xAxis: {
-        type: "category",
-        data: data.labels,
-        axisLine: {
-          lineStyle: {
-            color: "#D9DDE5",
-          },
-        },
-        axisTick: {
-          alignWithLabel: true,
-        },
-        axisLabel: {
-          color: "#475467",
-          fontSize: 11,
-          fontWeight: 500,
-          interval: 0,
-          rotate: needsRotation ? 22 : 0,
-          margin: 12,
-          formatter: (value: string) => {
-            // Truncate overly long labels on mobile
-            return value.length > 15 ? value.slice(0, 14) + "…" : value;
-          },
-        },
-      },
-
-      yAxis: {
-        type: "value",
-        axisLine: {
-          show: false,
-        },
-        axisTick: {
-          show: false,
-        },
-        axisLabel: {
-          color: "#667085",
-          fontSize: 11,
-          margin: 12,
-          formatter: (val: number) => {
-            if (isCountChart) {
-              if (Math.abs(val) >= 1_000_000) return (val / 1_000_000).toFixed(1) + "M";
-              if (Math.abs(val) >= 1_000) return (val / 1_000).toFixed(0) + "K";
-              return String(val);
-            }
-            if (Math.abs(val) >= 1_000_000_000) return "$" + (val / 1_000_000_000).toFixed(1) + "B";
-            if (Math.abs(val) >= 1_000_000) return "$" + (val / 1_000_000).toFixed(0) + "M";
-            if (Math.abs(val) >= 1_000) return "$" + (val / 1_000).toFixed(0) + "K";
-            return "$" + String(val);
-          },
-        },
-        splitLine: {
-          lineStyle: {
-            color: "#EEF0F4",
-            type: "dashed",
-          },
-        },
-      },
-
-      series: seriesList,
-    };
-  }, [data, hasSeries, hasValues, title, type, isCountChart]);
-
-  if (!option) {
+  if (!data || !data.labels) {
     return null;
   }
 
+  const isPie = type === "pie";
+
+  // Build series config
+  let seriesList: any[] = [];
+
+  if (isPie && data.values) {
+    seriesList = [
+      {
+        name: title,
+        type: "pie",
+        radius: ["45%", "72%"],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 8,
+          borderColor: "#fff",
+          borderWidth: 2,
+        },
+        label: {
+          show: true,
+          formatter: "{b}: {d}%",
+          fontSize: 11,
+          color: "#475569",
+        },
+        data: data.labels.map((lbl, idx) => ({
+          name: lbl,
+          value: data.values ? data.values[idx] || 0 : 0,
+        })),
+      },
+    ];
+  } else if (data.series && data.series.length > 0) {
+    seriesList = data.series.map((s, idx) => {
+      const palette = ["#192A56", "#10B981", "#F59E0B", "#6366F1", "#EC4899", "#8B5CF6"];
+      const col = s.color || palette[idx % palette.length];
+      const sType = s.type || (type === "area" ? "line" : type);
+
+      return {
+        name: s.name,
+        type: sType,
+        data: s.data,
+        smooth: s.smooth !== false,
+        barMaxWidth: 42,
+        itemStyle: {
+          color: col,
+          borderRadius: sType === "bar" ? [6, 6, 0, 0] : 0,
+        },
+        lineStyle: s.lineStyle || {
+          color: col,
+          width: 2.5,
+        },
+        areaStyle:
+          s.areaStyle || (type === "area" ? { opacity: 0.15, color: col } : undefined),
+        symbol: "circle",
+        symbolSize: 6,
+      };
+    });
+  } else if (data.values) {
+    const defaultColor = "#192A56";
+    seriesList = [
+      {
+        name: title,
+        type: type === "area" ? "line" : type,
+        data: data.values,
+        smooth: type === "line" || type === "area",
+        barMaxWidth: 48,
+        itemStyle: {
+          color: defaultColor,
+          borderRadius: type === "bar" ? [6, 6, 0, 0] : 0,
+        },
+        lineStyle: {
+          color: defaultColor,
+          width: 3,
+        },
+        areaStyle: type === "area" ? { opacity: 0.15, color: defaultColor } : undefined,
+        symbol: "circle",
+        symbolSize: 7,
+      },
+    ];
+  }
+
+  const option = isPie
+    ? {
+        tooltip: {
+          trigger: "item",
+          formatter: "{a} <br/>{b}: {c} ({d}%)",
+        },
+        legend: {
+          bottom: "2%",
+          left: "center",
+          itemWidth: 10,
+          itemHeight: 10,
+          textStyle: { fontSize: 11, color: "#64748B" },
+        },
+        series: seriesList,
+      }
+    : {
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "cross", crossStyle: { color: "#999" } },
+          formatter: (params: any) => {
+            if (!params || !params.length) return "";
+            let res = `<div class="font-bold text-xs mb-1 text-slate-800">${params[0].axisValue}</div>`;
+            params.forEach((item: any) => {
+              let valFormatted = item.value;
+              if (formatAsCurrency && typeof valFormatted === "number") {
+                valFormatted = `$${valFormatted.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+              } else if (formatAsPercent && typeof valFormatted === "number") {
+                valFormatted = `${valFormatted.toFixed(1)}%`;
+              } else if (typeof valFormatted === "number") {
+                valFormatted = valFormatted.toLocaleString();
+              }
+              res += `<div class="flex items-center gap-2 text-xs text-slate-600">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${item.color};"></span>
+                <span>${item.seriesName}:</span>
+                <span class="font-semibold text-slate-900">${valFormatted}</span>
+              </div>`;
+            });
+            return res;
+          },
+        },
+        legend:
+          seriesList.length > 1
+            ? {
+                top: "2%",
+                right: "4%",
+                itemWidth: 12,
+                itemHeight: 10,
+                textStyle: { fontSize: 11, color: "#64748B" },
+              }
+            : undefined,
+        grid: {
+          left: "3%",
+          right: "4%",
+          bottom: "8%",
+          top: seriesList.length > 1 ? "18%" : "12%",
+          containLabel: true,
+        },
+        xAxis: {
+          type: "category",
+          data: data.labels,
+          axisLine: { lineStyle: { color: "#E2E8F0" } },
+          axisLabel: { color: "#64748B", fontSize: 11, interval: 0, rotate: data.labels.length > 7 ? 25 : 0 },
+        },
+        yAxis: {
+          type: "value",
+          axisLine: { show: false },
+          axisLabel: {
+            color: "#64748B",
+            fontSize: 11,
+            formatter: (val: number) => {
+              if (formatAsCurrency) {
+                if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
+                if (val >= 1_000) return `$${(val / 1_000).toFixed(0)}k`;
+                return `$${val}`;
+              }
+              if (formatAsPercent) return `${val}%`;
+              if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1)}M`;
+              if (val >= 1_000) return `${(val / 1_000).toFixed(0)}k`;
+              return `${val}`;
+            },
+          },
+          splitLine: { lineStyle: { color: "#F1F5F9" } },
+        },
+        series: seriesList,
+      };
+
   return (
-    <div className="w-full rounded-2xl border border-[#192A56]/10 bg-white p-4 shadow-sm sm:p-5">
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-1">
+    <div className="w-full rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition hover:shadow-sm">
+      <div className="mb-3 flex items-start justify-between">
         <div>
-          <h3 className="text-sm font-bold text-[#192A56] sm:text-base">{title}</h3>
-          {subtitle && <p className="mt-0.5 text-xs text-gray-500">{subtitle}</p>}
+          <h3 className="text-sm font-bold tracking-tight text-[#192A56]">{title}</h3>
+          {subtitle && <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>}
         </div>
       </div>
 
-      {/* Increased responsive chart height: 380px on mobile, 420px on sm, 440px on lg */}
-      <div className="h-[380px] w-full sm:h-[420px] lg:h-[440px]">
+      <div style={{ height: `${height}px`, width: "100%" }}>
         <ReactECharts
-          ref={echartsRef}
           option={option}
+          style={{ width: "100%", height: "100%" }}
+          opts={{ renderer: "canvas" }}
           notMerge={true}
-          lazyUpdate={true}
-          style={{
-            width: "100%",
-            height: "100%",
-          }}
-          opts={{
-            renderer: "canvas",
-          }}
         />
       </div>
     </div>
